@@ -4,6 +4,7 @@ class User {
 
     public static function register($name, $email, $password) {   //
         $db=Db::getConnection();
+        $hash = password_hash($password, PASSWORD_DEFAULT);
         
         $sql = 'INSERT INTO user (name, email, password) '
                 . 'VALUES (:name, :email, :password)';
@@ -11,7 +12,7 @@ class User {
         $result = $db->prepare($sql);
         $result->bindParam(':name', $name, PDO::PARAM_STR);
         $result->bindParam(':email', $email, PDO::PARAM_STR);
-        $result->bindParam(':password', $password, PDO::PARAM_STR);
+        $result->bindParam(':password', $hash, PDO::PARAM_STR);
         
         return $result->execute();
     }
@@ -20,15 +21,14 @@ class User {
     {
         $db = Db::getConnection();
         
-        $sql = 'SELECT * FROM user WHERE email = :email AND password = :password';
+        $sql = 'SELECT * FROM user WHERE email = :email';
         
         $result = $db->prepare($sql);
         $result->bindParam(':email', $email, PDO::PARAM_INT);
-        $result->bindParam(':password', $password, PDO::PARAM_INT);
         $result->execute();
         
         $user = $result->fetch();
-        if ($user) {
+        if ($user AND password_verify($password, $user['password'])) {
             return $user['id'];
         }
         
